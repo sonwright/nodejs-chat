@@ -1,63 +1,41 @@
-var http 	= require('http')
-		,sys 	= require('sys')
-		,fs 	= require('fs')
-		,ws		= require('./ws.js');
+var express = require('express'),
+		sys = require('sys'),
+		fs = require('fs'),
+		iosocket = require('socket.io');
 		
 var clients = [];
 
-http.createServer(function(request, response) {
-	response.writeHead(200, {
-		'Content-Type' : 'text/html'
-	});
-	console.log('http.createServer');
-	console.log('dirname : ' + __dirname);
-	var rs = fs.createReadStream(__dirname + '/template.html');
-	sys.pump(rs, response);
-	
-}).listen(8000);
+var server = express.createServer();
 
-ws.createServer(function(websocket) {
+var io = iosocket.listen(server);
 
+io.sockets.on('connection', function(socket) {
+	socket.emit('message', {hello: 'world'});
+	console.log('connection');
+});//eo on.connection
+/*
+iosocket.sockets.on('connection', function(client){
+	console.log("connection - backend");
 	var username;
 	
-	websocket.on('connect', function(resource) {
-		clients.push(websocket);
-		websocket.write('Welcome to this chat server');
-		websocket.write("Please input your username");
-	});
-	
-	websocket.on('data', function(data){
+	client.send('Welcome to this socket.io chat server.');
+	client.send('Please input your username');
+
+	client.on('message', function(message) {
+		console.log("message received - backend");
+		console.log(message);
 		if (!username) {
-			username = data.toString();
-			websocket.write("Welcome, " + username + "!");
-			
-			clients.forEach(function(client) {
-				client.write(username + " has joined the channel.");
-			});
-			return; //returns so rest of channel doesn't see new user typing in their name.
+			username = message;
+			client.send('Welcome, ' + username + '.');
+			return;			
 		}
-		
-		if (data.toString() == "/quit") {
-				clients.forEach(function(client) {
-				client.write(username + " has quit the channel.");
-			});
-			websocket.end();
-			return; //returns so rest of channel doesn't see new user typing in their name.
-		}
-		
-		var feedback = username + " : " + data.toString() + "\n";
-		
-		//Foreach loop that goes through anyone connected and writes data
-		clients.forEach(function(client) {
-			client.write(feedback);
-		});
-		
+		console.log("about to emit");
+		//console.log(socket);
+		socket.emit('message', {'test': message });
+		return;
+		//socket.send(message);
+		//client.send(username + ' : ' + message);
 	});
-	
-	websocket.on('close', function() {
-		var pos = clients.indexOf(websocket);
-		if (pos >= 0) {
-			clients.splice(pos, 1);
-		}
-	});
-}).listen(8001);
+});
+*/
+server.listen(8000);
